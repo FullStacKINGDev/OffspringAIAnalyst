@@ -101,9 +101,15 @@ app.post('/api/chat', async (req, res) => {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream; charset=utf-8',
     'Cache-Control': 'no-cache, no-transform',
-    Connection: 'keep-alive',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+    'Content-Encoding': 'none',
   });
-  const send = (ev) => res.write(`data: ${JSON.stringify(ev)}\n\n`);
+  if (typeof res.flushHeaders === 'function') res.flushHeaders();
+  const send = (ev) => {
+    res.write(`data: ${JSON.stringify(ev)}\n\n`);
+    if (typeof res.flush === 'function') res.flush();
+  };
   const abort = new AbortController();
   res.on('close', () => { if (!res.writableEnded) abort.abort(); });
 
