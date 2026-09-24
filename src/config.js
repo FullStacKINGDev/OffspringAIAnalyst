@@ -7,12 +7,15 @@ const root = path.join(__dirname, '..');
 // Leave blank to allow ALL ngrok hostnames (still requires NGROK_ENABLED=true).
 const rawNgrokHosts = process.env.NGROK_ALLOWED_HOSTS || '';
 
+const rawModel = process.env.OPENAI_MODEL || 'gpt-4o';
+const model = /gpt-[45]\.1/i.test(rawModel) ? 'gpt-4o' : rawModel;
+
 module.exports = {
   root,
   port: Number(process.env.PORT) || 3000,
   dataDir: path.resolve(root, process.env.DATA_DIR || './Data'),
   openaiApiKey: process.env.OPENAI_API_KEY,
-  model: process.env.OPENAI_MODEL || 'gpt-4.1',
+  model,
   // Layer 3 of answer verification: an independent reviewer model (can be set to a different / stronger model).
   reviewModel: process.env.REVIEW_MODEL || 'gpt-4o-mini',
   reviewEnabled: process.env.REVIEW_ENABLED !== 'false',

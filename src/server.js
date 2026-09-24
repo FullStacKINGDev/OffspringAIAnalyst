@@ -84,11 +84,13 @@ app.post('/api/reload', async (req, res, next) => {
 });
 
 function friendlyError(e) {
+  if (e?.status === 404) return `OpenAI model error: ${e.message || 'Model not found'}. Check OPENAI_MODEL in environment variables.`;
   if (e?.status === 429 && /credit|quota/i.test(e.message)) return 'The OpenAI account has no credits left. Add credits at platform.openai.com → Settings → Billing, then try again.';
-  if (e?.status === 401) return 'The OpenAI API key was rejected. Check OPENAI_API_KEY in .env.';
+  if (e?.status === 401) return 'The OpenAI API key was rejected. Check OPENAI_API_KEY in Vercel environment variables.';
   if (e?.status === 429) return 'OpenAI rate limit reached. Wait a moment and try again.';
   return e?.message || 'Unexpected error';
 }
+
 
 // Streams the answer as Server-Sent Events (see src/ai/agent.js for the event types).
 app.post('/api/chat', async (req, res) => {
