@@ -1,0 +1,35 @@
+{
+  "name": "wacd-financial-assistant",
+  "version": "1.0.0",
+  "description": "AI financial analysis assistant for Offspring / WorldACD (WACD)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "check": "node scripts/check.js",
+    "ask": "node scripts/ask.js",
+    "eval": "node scripts/eval.js",
+    "test:verify": "node scripts/test-verification.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dompurify": "^3.4.16",
+    "dotenv": "^18.0.3",
+    "exceljs": "^4.4.0",
+    "express": "^5.2.1",
+    "geist": "^1.7.2",
+    "lucide": "^1.47.0",
+    "marked": "^18.0.14",
+    "openai": "^7.23.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "private": true,
+  "overrides": {
+    "uuid": "^11.1.1"
+  }
+}
