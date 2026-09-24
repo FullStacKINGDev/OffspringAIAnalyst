@@ -127,12 +127,16 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message });
 });
 
-(async () => {
-  const store = await getStore();
-  app.listen(config.port, () => {
-    console.log(`WACD Financial Assistant on http://localhost:${config.port}`);
-    console.log(`Data: ${store.sources.length} source files, actuals to ${store.latestActualMonth}, ${store.issues.length} data-quality findings`);
-    if (store.loadErrors.length) console.warn('Load errors:', store.loadErrors);
-    if (!config.openaiApiKey) console.warn('OPENAI_API_KEY is not set: chat will not work until it is added to .env');
-  });
-})();
+if (require.main === module) {
+  (async () => {
+    const store = await getStore();
+    app.listen(config.port, () => {
+      console.log(`WACD Financial Assistant on http://localhost:${config.port}`);
+      console.log(`Data: ${store.sources.length} source files, actuals to ${store.latestActualMonth}, ${store.issues.length} data-quality findings`);
+      if (store.loadErrors.length) console.warn('Load errors:', store.loadErrors);
+      if (!config.openaiApiKey) console.warn('OPENAI_API_KEY is not set: chat will not work until it is added to .env');
+    });
+  })();
+}
+
+module.exports = app;
