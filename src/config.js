@@ -14,7 +14,7 @@ module.exports = {
   openaiApiKey: process.env.OPENAI_API_KEY,
   model: process.env.OPENAI_MODEL || 'gpt-4.1',
   // Layer 3 of answer verification: an independent reviewer model (can be set to a different / stronger model).
-  reviewModel: process.env.REVIEW_MODEL || process.env.OPENAI_MODEL || 'gpt-4.1',
+  reviewModel: process.env.REVIEW_MODEL || 'gpt-4o-mini',
   reviewEnabled: process.env.REVIEW_ENABLED !== 'false',
   // WACD's financial year runs April-March and is named after the calendar year it ends in
   // (Exact Online "Financial year 2027" = Apr 2026 - Mar 2027).
