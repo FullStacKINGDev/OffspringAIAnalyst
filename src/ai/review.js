@@ -3,6 +3,7 @@
 // answering a different question or period, unsupported causes, forecast / budget / invoicing mix-ups,
 // overclaimed conclusions and missing material caveats.
 const config = require('../config');
+const { modelParams, createCompletion } = require('./openaiCall');
 
 const REVIEW_SCHEMA = {
   name: 'answer_review',
@@ -67,9 +68,9 @@ function compactToolData(toolResults, limit = 14000) {
 }
 
 async function reviewAnswer(openai, { question, answer, toolResults, signal }) {
-  const res = await openai.chat.completions.create({
+  const res = await createCompletion(openai, {
     model: config.reviewModel,
-    temperature: 0,
+    ...modelParams(config.reviewModel, config.reviewReasoningEffort),
     response_format: { type: 'json_schema', json_schema: REVIEW_SCHEMA },
     messages: [
       { role: 'system', content: REVIEWER_PROMPT },

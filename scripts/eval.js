@@ -8,7 +8,10 @@ const pl = require('../src/analysis/pl');
 const { balanceSheet } = require('../src/analysis/balance');
 const P = require('../src/lib/periods');
 
-const fmt = (v) => Math.round(Math.abs(v)).toLocaleString('en-GB');
+const whole = (v) => Math.round(Math.abs(v)).toLocaleString('en-GB');
+const cents = (v) => Math.abs(v).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// Accepted spellings of one amount: whole euros (3,216,893) or with cents (3,216,892.99).
+const fmt = (v) => [whole(v), cents(v)];
 
 function buildCases(s) {
   const ytd = pl.plStatement(s, { compare_with: 'budget' }).rows;
@@ -65,13 +68,13 @@ async function ask(store, question) {
     try {
       const { text, verification, tools } = await ask(store, c.q);
       const flat = text.replace(/ /g, ' ');
-      const missing = c.expect.filter((e) => ![].concat(e).some((alt) => flat.includes(alt)));
+      const missing = c.expect.filter((e) => ![].concat(e).flat().some((alt) => flat.includes(alt)));
       const forbidden = (c.forbid || []).filter((re) => re.test(flat));
       const verified = !verification || verification.ok;
       const ok = !missing.length && !forbidden.length && verified;
       if (ok) pass++;
       console.log(`${ok ? 'PASS' : 'FAIL'}  #${n}  ${c.q}  (${((Date.now() - t0) / 1000).toFixed(1)}s; tools: ${tools.join(', ') || 'none'}; figures checked: ${verification ? verification.checked : 0}${verification && verification.corrected ? ', auto-corrected' : ''})`);
-      if (missing.length) console.log(`      missing expected: ${missing.map((m) => [].concat(m).join(' | ')).join('; ')}`);
+      if (missing.length) console.log(`      missing expected: ${missing.map((m) => [].concat(m).flat().join(' | ')).join('; ')}`);
       if (forbidden.length) console.log(`      contains forbidden: ${forbidden.join('; ')}`);
       if (verification && verification.layers) {
         console.log(`      layers: ${verification.layers.map((l, k) => `${k + 1}.${l.label} ${l.skipped ? (l.ok ? '(not needed)' : '(NOT RUN)') : l.ok ? '✓' : '✗'}`).join('  ')}`);

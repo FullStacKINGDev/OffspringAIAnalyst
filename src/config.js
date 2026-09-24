@@ -14,8 +14,14 @@ module.exports = {
   openaiApiKey: process.env.OPENAI_API_KEY,
   model: process.env.OPENAI_MODEL || 'gpt-4.1',
   // Layer 3 of answer verification: an independent reviewer model (can be set to a different / stronger model).
-  reviewModel: process.env.REVIEW_MODEL || 'gpt-4o-mini',
+  // Defaults to the main model: in the verification self-test (npm run test:verify -- --review) gpt-4o-mini
+  // raised false alarms on every correct answer and missed an invoicing-vs-revenue error; gpt-5.1 scored 13/13.
+  reviewModel: process.env.REVIEW_MODEL || process.env.OPENAI_MODEL || 'gpt-4.1',
   reviewEnabled: process.env.REVIEW_ENABLED !== 'false',
+  // Optional, for reasoning models (gpt-5.x, o-series): none | minimal | low | medium | high. Unset = the model's default.
+  // Higher effort can improve answer quality but is slower (mind the 60 s Vercel limit in vercel.json).
+  reasoningEffort: process.env.OPENAI_REASONING_EFFORT || null,
+  reviewReasoningEffort: process.env.REVIEW_REASONING_EFFORT || null,
   // WACD's financial year runs April-March and is named after the calendar year it ends in
   // (Exact Online "Financial year 2027" = Apr 2026 - Mar 2027).
   fyStartMonth: Number(process.env.FY_START_MONTH) || 4,

@@ -40,26 +40,10 @@ if (config.ngrokEnabled) {
 // ────────────────────────────────────────────────────────────────────────────
 
 app.use(express.json({ limit: '1mb' }));
+// Everything in public/ is static, including the browser libraries, fonts and icon subset that
+// scripts/copy-vendor.js copies there (public/vendor, public/fonts). Serving them as files instead of
+// from node_modules keeps them in the Vercel deployment, which only bundles files the code require()s.
 app.use(express.static(path.join(config.root, 'public')));
-const vendor = (file) => (req, res) => res.sendFile(path.join(config.root, 'node_modules', file));
-app.get('/vendor/marked.js', vendor('marked/lib/marked.umd.js'));
-app.get('/vendor/purify.js', vendor('dompurify/dist/purify.min.js'));
-app.get('/fonts/geist-sans.woff2', vendor('geist/dist/fonts/geist-sans/Geist-Variable.woff2'));
-app.get('/fonts/geist-mono.woff2', vendor('geist/dist/fonts/geist-mono/GeistMono-Variable.woff2'));
-
-// Only the Lucide icons the UI uses, instead of the full icon bundle.
-const UI_ICONS = [
-  'ArrowUp', 'Square', 'RefreshCw', 'Plus', 'Copy', 'Check', 'ChevronDown', 'ChevronRight', 'Sparkles', 'Sun', 'Moon', 'Monitor',
-  'PanelLeft', 'X', 'Receipt', 'ChartLine', 'ArrowUpDown', 'Scale', 'Landmark', 'CalendarDays', 'Target', 'ShieldCheck',
-  'FileSpreadsheet', 'FileText', 'TriangleAlert', 'OctagonAlert', 'Info', 'Wallet', 'Clock', 'Building2', 'Workflow',
-  'TrendingUp', 'TrendingDown', 'Coins', 'Gauge', 'Lightbulb', 'LayoutDashboard', 'Database', 'CircleCheck', 'Table2', 'LoaderCircle', 'Minus',
-];
-const iconsJs = (() => {
-  const { icons } = require('lucide');
-  const subset = Object.fromEntries(UI_ICONS.filter((n) => icons[n]).map((n) => [n, icons[n]]));
-  return `window.ICONS=${JSON.stringify(subset)};`;
-})();
-app.get('/vendor/icons.js', (req, res) => res.type('application/javascript').send(iconsJs));
 
 // Cheap liveness check; the UI polls it to detect when the server is back after a restart.
 app.get('/api/health', (req, res) => res.json({ ok: true }));

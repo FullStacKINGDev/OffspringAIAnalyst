@@ -23,6 +23,7 @@ npm start                   # http://localhost:3000
 | `npm run check` | Loads the data and prints coverage, headline figures and all data-quality findings. No AI calls. |
 | `npm run ask -- "question"` | Asks the assistant from the terminal |
 | `npm run eval` | Accuracy test: benchmark questions through the live AI, checked against figures computed by the engine (a few cents of API use) |
+| `npm run vendor` | Copies browser libraries, fonts and the icon subset from node_modules into `public/vendor` and `public/fonts` (also runs automatically after `npm install`) |
 | `npm run test:verify` | Self-test of the three verification layers against known-good and known-wrong answers (add `-- --review` for the live reviewer) |
 
 `.env` settings: `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-4.1`), `PORT`, `DATA_DIR` (default `./Data`),

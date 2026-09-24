@@ -699,6 +699,12 @@
   const scrollDown = (force) => { if (force || nearBottom()) thread.scrollTop = thread.scrollHeight; };
 
   function renderMarkdown(target, md, { streaming = false, final = false } = {}) {
+    if (typeof marked === 'undefined' || typeof DOMPurify === 'undefined') {
+      // Markdown/sanitiser scripts failed to load: show the text as-is (textContent is always safe).
+      target.replaceChildren(...md.split(/\n{2,}/).map((para) => el('p', { style: 'white-space:pre-wrap', text: para })));
+      if (!renderMarkdown.warned) { renderMarkdown.warned = true; console.error('Markdown libraries not loaded (/vendor/marked.js, /vendor/purify.js); showing plain text.'); }
+      return;
+    }
     target.innerHTML = DOMPurify.sanitize(marked.parse(md, { gfm: true, breaks: false }));
     for (const t of target.querySelectorAll('table')) {
       const wrap = el('div', { class: 'table-wrap' });
@@ -872,7 +878,7 @@
     const paint = () => {
       raf = 0;
       const stick = nearBottom();
-      renderMarkdown(ui.answer, md, { streaming: true });
+      try { renderMarkdown(ui.answer, md, { streaming: true }); } catch (err) { console.error(err); }
       if (stick) scrollDown(true);
     };
     const stepItems = {};
@@ -966,7 +972,12 @@
       }
     } finally {
       if (raf) cancelAnimationFrame(raf);
-      if (md) renderMarkdown(ui.answer, md, { final: true });
+      if (md) {
+        try { renderMarkdown(ui.answer, md, { final: true }); } catch (err) {
+          console.error(err);
+          ui.answer.replaceChildren(el('p', { style: 'white-space:pre-wrap', text: md }));
+        }
+      }
       // Result of the three verification layers run on the server before the answer was shown.
       if (md && verification && verification.checked > 0) {
         const stick = nearBottom();

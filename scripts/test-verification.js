@@ -52,7 +52,9 @@ Calculation: €3,216,893 ÷ €7,786,925 × 100 = 41.3%. €4,570,032 is still 
 | EBIT | 1,562,391 | 1,336,746 | +225,645 | +16.9% |
 | Net Income | 1,283,784 | 1,033,951 | +249,832 | +24.2% |
 
-| Method | Revenue (€) | EBIT (€) | Net Income (€) |
+Full-year outlook (AI projection – not an official company forecast or budget):
+
+| AI projection method | Revenue (€) | EBIT (€) | Net Income (€) |
 |---|---|---|---|
 | Budget for remaining months | 7,953,011 | 3,729,761 | 2,966,792 |
 | Run-rate | 7,765,908 | 3,720,168 | 3,039,455 |
@@ -62,7 +64,9 @@ Calculation: €3,216,893 ÷ €7,786,925 × 100 = 41.3%. €4,570,032 is still 
 |---|---|---|---|
 | Receivable from group company (Shanwick B.V.) | 7,275,680 | 9,674,084 | +2,398,404 |
 | Cash and bank | 2,768,823 | 2,243,854 | -524,969 |
-| Deferred income | 3,077,557 | 3,253,508 | +175,951 |` },
+| Deferred income | 3,077,557 | 3,253,508 | +175,951 |
+
+Note: the MBR BUDGET sheet has known inconsistencies (its "EBIT - Budget" column and a second revenue phasing), listed under Data checks; the budget figures above use revenue minus cost budgets, as the MBR "A to B" page does.` },
 
   // ---------- wrong answers: must be caught ----------
   { name: 'invented budget €7,167,000', expect: 1, calls: YTD_BUDGET, q: 'What is the annual budget?', a: 'The full-year revenue budget is €7,167,000, so you still need €3,950,107.' },

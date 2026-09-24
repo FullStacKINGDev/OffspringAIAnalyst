@@ -18,6 +18,7 @@ const { buildSystemPrompt } = require('./systemPrompt');
 const { verifyAnswer, collectValues } = require('./verify');
 const { checkMeaning } = require('./meaning');
 const { reviewAnswer } = require('./review');
+const { modelParams, createCompletion } = require('./openaiCall');
 
 let client = null;
 function getClient() {
@@ -63,13 +64,13 @@ async function* runAgent(store, history, { signal } = {}) {
   yield { type: 'status', text: 'Analysing the question…' };
 
   for (let round = 0; round < config.maxToolRounds + MAX_CORRECTIONS; round++) {
-    const stream = await openai.chat.completions.create({
+    const stream = await createCompletion(openai, {
       model: config.model,
       messages,
       tools: TOOL_SCHEMAS,
       tool_choice: 'auto',
       parallel_tool_calls: true,
-      temperature: 0,
+      ...modelParams(config.model, config.reasoningEffort),
       stream: true,
     }, { signal });
 

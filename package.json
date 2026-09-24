@@ -9,7 +9,9 @@
     "check": "node scripts/check.js",
     "ask": "node scripts/ask.js",
     "eval": "node scripts/eval.js",
-    "test:verify": "node scripts/test-verification.js"
+    "test:verify": "node scripts/test-verification.js",
+    "vendor": "node scripts/copy-vendor.js",
+    "postinstall": "node scripts/copy-vendor.js"
   },
   "keywords": [],
   "author": "",
