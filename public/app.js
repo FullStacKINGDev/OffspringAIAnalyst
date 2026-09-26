@@ -315,35 +315,61 @@
   moveIndicator(themeToggle, setTheme(savedTheme), true);
   themeButtons.forEach((b) => b.addEventListener('click', () => switchTheme(b.dataset.themeChoice, b)));
 
-  // ------------------------------------------------------------------ sidebar: tabs & drawer
-  const tabs = document.querySelector('.tabs');
-  function selectTab(name, instant) {
-    let active = null;
-    tabs.querySelectorAll('.tab').forEach((t) => {
-      const on = t.dataset.tab === name;
-      t.classList.toggle('active', on);
-      t.setAttribute('aria-selected', String(on));
-      if (on) active = t;
-    });
-    document.querySelectorAll('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== name; });
-    moveIndicator(tabs, active, instant);
-  }
-  tabs.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => selectTab(t.dataset.tab)));
-  selectTab('overview', true);
-
-  const openDrawer = () => {
-    $('sidebar').classList.add('open');
-    $('scrim').hidden = false;
-    requestAnimationFrame(() => { moveIndicator(tabs, tabs.querySelector('.tab.active'), true); moveIndicator(themeToggle, themeToggle.querySelector('[aria-checked="true"]'), true); });
+  // ------------------------------------------------------------------ navigation: Home / Reflex AI
+  // Two views in the main panel, switched by the URL hash (#/home, #/ai) so refresh and Back work.
+  const navItems = document.querySelector('.nav-items');
+  const VIEWS = ['home', 'ai'];
+  const viewFromHash = () => {
+    const v = location.hash.replace(/^#\/?/, '');
+    return VIEWS.includes(v) ? v : 'home';
   };
-  const closeDrawer = () => { $('sidebar').classList.remove('open'); $('scrim').hidden = true; };
-  $('open-sidebar').addEventListener('click', openDrawer);
-  $('close-sidebar').addEventListener('click', closeDrawer);
-  $('scrim').addEventListener('click', closeDrawer);
+  function moveNavIndicator(active, instant) {
+    const ind = navItems.querySelector('.nav-ind');
+    if (!ind || !active) return;
+    if (instant) navItems.classList.add('no-anim');
+    ind.style.setProperty('--y', `${active.offsetTop}px`);
+    ind.style.setProperty('--h', `${active.offsetHeight}px`);
+    if (instant) requestAnimationFrame(() => requestAnimationFrame(() => navItems.classList.remove('no-anim')));
+  }
+  let currentView = null;
+  function showView(name, instant) {
+    if (!VIEWS.includes(name)) name = 'home';
+    const changed = currentView !== name;
+    currentView = name;
+    document.querySelectorAll('.view').forEach((v) => { v.hidden = v.dataset.view !== name; });
+    let active = null;
+    navItems.querySelectorAll('.nav-item').forEach((a) => {
+      const on = a.dataset.view === name;
+      a.classList.toggle('active', on);
+      if (on) { a.setAttribute('aria-current', 'page'); active = a; } else a.removeAttribute('aria-current');
+    });
+    moveNavIndicator(active, instant);
+    document.body.dataset.view = name;
+    document.title = name === 'ai' ? 'Reflex AI · WACD Analyst' : 'Home · WACD Analyst';
+    // The chart sizes itself to its card, so redraw it when the dashboard becomes visible again.
+    if (name === 'home' && changed) {
+      requestAnimationFrame(() => {
+        if (lastTrend) renderChart(lastTrend, false);
+        if (lastCharts) renderDashboard(lastCharts, false);
+      });
+    }
+  }
+  window.addEventListener('hashchange', () => showView(viewFromHash()));
+  // Open Reflex AI, optionally asking a question straight away (dashboard ask bar, chips, findings).
+  function openAi(question) {
+    if (location.hash !== '#/ai') location.hash = '#/ai';
+    showView('ai');
+    if (question) ask(question);
+  }
+  function openChecks() {
+    if (location.hash !== '#/home') location.hash = '#/home';
+    showView('home');
+    requestAnimationFrame(() => $('checks-card').scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
 
   // Indicator positions depend on font metrics and layout.
   const realignIndicators = () => {
-    moveIndicator(tabs, tabs.querySelector('.tab.active'), true);
+    moveNavIndicator(navItems.querySelector('.nav-item.active'), true);
     moveIndicator(themeToggle, themeToggle.querySelector('[aria-checked="true"]'), true);
   };
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(realignIndicators);
@@ -358,7 +384,7 @@
     overviewData = o;
 
     $('company').textContent = o.company;
-    $('ws-meta').textContent = `Client of Offspring · reporting in ${o.currency}`;
+    $('ws-meta').textContent = `Client of Offspring · ${o.currency}`;
     $('fy-label').textContent = `${o.fiscal_year} · Year to date`;
     $('ytd-range').textContent = o.ytd_range;
     $('fy-count').textContent = `${o.fy_progress.months_elapsed} of ${o.fy_progress.months_total} months`;
@@ -366,10 +392,16 @@
     meter.style.width = '0%';
     requestAnimationFrame(() => requestAnimationFrame(() => { meter.style.width = `${(o.fy_progress.months_elapsed / o.fy_progress.months_total) * 100}%`; }));
 
-    $('period-chip').replaceChildren(icon('CalendarDays'), el('span', { text: `${o.fiscal_year} · actuals to ${o.latest_month}` }));
-    $('hero-pill-text').textContent = `Grounded in ${o.sources.length} source files · actuals to ${o.latest_month}`;
+    for (const id of ['period-chip', 'home-period-chip']) {
+      $(id).replaceChildren(icon('CalendarDays'), el('span', { text: `${o.fiscal_year} · actuals to ${o.latest_month}` }));
+    }
+    // Parts never break inside, and a separator starts the next line rather than ending the previous one.
+    const subParts = [o.company, `${o.fiscal_year} (${o.fiscal_year_range})`, `actuals to ${o.latest_month}`, o.currency];
+    $('dash-sub').replaceChildren(...subParts.flatMap((t, i) => (i ? [' ', el('span', { text: `· ${t}` })] : [el('span', { text: t })])));
+    $('hero-pill-text').textContent = `Reflex AI · ${o.sources.length} source files · actuals to ${o.latest_month}`;
     $('composer-model').textContent = `${o.model} · ${o.sources.length} source files`;
-    $('model-note').textContent = `Data loaded · ${o.model}`;
+    $('model-note').textContent = `Online · ${o.model}`;
+    $('model-note').title = 'Data loaded; answers by ' + o.model;
 
     renderKpis(o);
     renderChart(o.revenue_trend, true);
@@ -377,6 +409,7 @@
     renderBalance(o.balance);
     renderHealth(o.issues);
     renderSources(o);
+    renderDashboard(o.charts, true);
   }
 
   function renderKpis(o) {
@@ -447,7 +480,8 @@
     host.classList.toggle('animate', !!animate);
     host.replaceChildren();
     const W = Math.max(240, host.clientWidth || 290);
-    const H = 168;
+    // Fill the card when its row is taller than the chart needs (the card next to it sets the height).
+    const H = Math.min(420, Math.max(Number(host.dataset.height) || 168, Math.floor(host.clientHeight)));
     const m = { top: 18, right: 2, bottom: 22, left: 38 };
     const iw = W - m.left - m.right;
     const ih = H - m.top - m.bottom;
@@ -501,6 +535,7 @@
           const v = p.actual - p.budget;
           rows.push(el('div', { class: 'tt-var', text: `Variance ${v >= 0 ? '+' : '−'}${eur(Math.abs(v))} (${signedPct((v / p.budget) * 100)})` }));
         }
+        if (window.Charts) rows.push(window.Charts.askHint());
         showTooltip(rows, ev, hit);
       };
       const hide = () => { g.classList.remove('active'); hideTooltip(); };
@@ -508,6 +543,7 @@
       hit.addEventListener('pointerleave', hide);
       hit.addEventListener('focus', show);
       hit.addEventListener('blur', hide);
+      if (window.Charts) window.Charts.askable(hit, `How did revenue in ${p.label} compare with budget and with the same month last year? What drove the difference?`);
       g.append(hit);
       root.append(g);
     });
@@ -536,6 +572,388 @@
   }
   const hideTooltip = () => { $('tooltip').hidden = true; };
 
+  // ------------------------------------------------------------------ dashboard charts
+  // Colours follow the entity: validated categorical slots for part-to-whole charts, and one meaning per colour
+  // across the page (actual = blue, budget = orange, last year = grey, invoicing forecast = violet).
+  const CAT = ['var(--cat-1)', 'var(--cat-2)', 'var(--cat-3)', 'var(--cat-4)', 'var(--cat-5)', 'var(--cat-6)'];
+  const COST_SLOT = { Personnel: 0, General: 1, Sales: 2, Housing: 3, Office: 4, 'Other costs': 5 };
+  const SERIES_COLOR = { actual: 'var(--series-1)', budget: 'var(--series-2)', prior: 'var(--prior)' };
+  let lastCharts = null;
+
+  function lineLegend(host, series) {
+    host.replaceChildren(...series.map((sr) => el('span', {}, el('i', { class: 'key key-line', style: `background:${sr.color}` }), sr.name)));
+  }
+  function slotColors(items, fixed) {
+    const used = new Set(items.map((it) => fixed[it.label]).filter((i) => i != null));
+    let next = 0;
+    return items.map((it) => {
+      if (fixed[it.label] != null) return CAT[fixed[it.label]];
+      while (used.has(next)) next++;
+      used.add(next);
+      return CAT[next];
+    });
+  }
+
+  // Each chart card gets a takeaway line (computed from the same figures as the chart) and an Ask button.
+  const B = (t) => el('b', { text: t });
+  function decorate(cardId, { insight, ask }) {
+    const card = $(cardId);
+    if (!card) return;
+    const head = card.querySelector('.card-head');
+    let actions = head.querySelector('.card-actions');
+    if (!actions) {
+      const tableBtn = head.querySelector(':scope > button');
+      const askBtn = el('button', { class: 'chip-btn ask-btn', type: 'button', title: 'Ask Reflex AI about this chart', 'aria-label': 'Ask Reflex AI about this chart' },
+        icon('Sparkles'), el('span', { text: 'Ask' }));
+      askBtn.addEventListener('click', () => openAi(askBtn.dataset.question));
+      actions = el('div', { class: 'card-actions' }, askBtn, tableBtn);
+      head.append(actions);
+    }
+    actions.querySelector('.ask-btn').dataset.question = ask;
+    let p = card.querySelector(':scope > .insight');
+    if (!insight) { if (p) p.remove(); return; }
+    if (!p) { p = el('p', { class: 'insight' }); head.after(p); }
+    p.replaceChildren(icon('Lightbulb'), el('span', {}, ...insight));
+  }
+
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthName = (m) => `${MON[Number(m.slice(5, 7)) - 1]} ${m.slice(0, 4)}`;
+  const yearBefore = (m) => `${Number(m.slice(0, 4)) - 1}${m.slice(4)}`;
+  // Exact to the cent, for tables that must foot.
+  const eur2 = (v) => (v == null ? '' : `${v < 0 ? '−' : ''}€${Math.abs(v).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+  const signed2 = (v) => (v == null ? '' : `${v > 0 ? '+' : v < 0 ? '−' : ''}${eur2(Math.abs(v))}`);
+  const upDown = (v) => (v >= 0 ? 'up' : 'down');
+
+  // Full-year budget progress beside the year-to-date meter: the bar is actual to date as a share of the full-year
+  // budget; the tick (and "Plan") is where the phased budget expects to be by the latest month.
+  function renderPlan(bp, fy, animate) {
+    const host = $('plan-progress');
+    host.closest('.period-card').classList.toggle('with-plan', !!bp);
+    if (!bp) { host.hidden = true; return; }
+    host.hidden = false;
+    const C = window.Charts;
+    host.replaceChildren(...bp.items.map((src) => {
+      // Percentages from the euro amounts, so the one-decimal figure is rounded once.
+      const it = { ...src, pct_achieved: (100 * src.actual) / src.full_year_budget, pct_planned: (100 * src.budget_to_date) / src.full_year_budget };
+      const fill = el('i', { class: 'plan-fill' });
+      const row = el('div', {
+        class: 'plan-row', tabindex: '0',
+        'aria-label': `${it.label}: ${it.pct_achieved.toFixed(1)}% of the full-year budget reached; the phased budget expects ${it.pct_planned.toFixed(1)}% by ${bp.through}`,
+      },
+      el('div', { class: 'eyebrow', text: `${it.label} · FY budget` }),
+      el('div', { class: 'period-row' },
+        el('div', { class: 'period-range', text: `${it.pct_achieved.toFixed(1)}%` }),
+        el('div', { class: 'period-count', title: `Budget phased to ${bp.through}` }, el('i', { class: 'plan-key' }), `Plan ${it.pct_planned.toFixed(1)}%`)),
+      el('div', { class: 'plan-bar' }, fill, el('i', { class: 'plan-mark', style: `left:${Math.min(100, it.pct_planned)}%` })));
+      const width = `${Math.min(100, it.pct_achieved)}%`;
+      if (animate) requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.width = width; }));
+      else fill.style.width = width;
+      const rows = () => [el('div', { class: 'tt-title', text: `${it.label} · ${fy}` }),
+        ttRow('var(--series-1)', eur(it.actual), `actual to ${bp.through} (${it.pct_achieved.toFixed(1)}%)`),
+        ttRow('var(--ink)', eur(it.budget_to_date), `budget to ${bp.through} (${it.pct_planned.toFixed(1)}%)`),
+        el('div', { class: 'tt-var', text: `Full-year budget ${eur(it.full_year_budget)}` }), C.askHint()];
+      row.addEventListener('pointermove', (ev) => showTooltip(rows(), ev, row));
+      row.addEventListener('pointerleave', hideTooltip);
+      row.addEventListener('focus', () => showTooltip(rows(), null, row));
+      row.addEventListener('blur', hideTooltip);
+      C.askable(row, `Are we on track to reach the full-year ${it.label} budget for ${fy}? How much is still needed per month?`);
+      return row;
+    }));
+  }
+
+  function renderDashboard(c, animate) {
+    if (!c || !window.Charts) return;
+    lastCharts = c;
+    const C = window.Charts;
+    C.setAsk(openAi);
+    const part = (id, sel) => document.getElementById(id).querySelector(sel);
+    const safe = (name, fn) => { try { fn(); } catch (err) { console.error(`Chart "${name}" failed:`, err); } };
+    const pctOf = (v, t) => `${((100 * v) / t).toFixed(1)}%`;
+    const ytd = c.ytd_label;
+    const revenueStep = c.ebit_bridge && c.ebit_bridge.steps.find((s) => s.key === 'revenue');
+
+    safe('budget progress', () => renderPlan(c.budget_progress, c.fiscal_year, animate));
+
+    safe('revenue vs budget', () => {
+      const pts = (lastTrend || []).filter((p) => p.actual != null && p.budget);
+      if (!pts.length) return;
+      const beat = pts.filter((p) => p.actual >= p.budget).length;
+      const gap = (p) => (p.actual - p.budget) / p.budget;
+      const weakest = pts.reduce((a, p) => (gap(p) < gap(a) ? p : a));
+      const span = pts.length === lastTrend.length ? `the last ${pts.length}` : `${pts.length} budgeted`;
+      decorate('card-revenue', {
+        insight: beat === pts.length
+          ? ['Revenue beat budget in ', B(`all ${span}`), ' months.']
+          : ['Revenue beat budget in ', B(`${beat} of ${span}`), ' months; the weakest was ', B(weakest.label), ` (${signedPct(gap(weakest) * 100)}).`],
+        ask: 'How has monthly revenue compared with budget over the last 12 months? Which months missed budget, and why?',
+      });
+    });
+
+    safe('revenue mix', () => {
+      const items = c.revenue_mix.items.map((x) => ({
+        ...x,
+        ask: x.key === 'Other'
+          ? `How did Other Revenue and PY Adjustments for ${ytd} compare with budget and with the same months last year?`
+          : `How did ${x.label} revenue for ${ytd} compare with budget and with the same months last year?`,
+      }));
+      const d = C.donut(part('card-revenue-mix', '[data-chart]'), { items, colors: CAT, centerLabel: 'revenue YTD', animate });
+      C.donutLegend(part('card-revenue-mix', '[data-legend]'), items, CAT, d.total, { onHover: d.highlight });
+      part('card-revenue-mix', '[data-sub]').textContent = `${ytd} · by customer segment`;
+      C.table(part('card-revenue-mix', '.chart-table'), ['Segment', 'Revenue', 'Share'], items.map((x) => [x.label, C.eur(x.value), pctOf(x.value, d.total)]));
+      const [first, second] = [...items].sort((a, b) => b.value - a.value);
+      decorate('card-revenue-mix', {
+        insight: [B(first.label), ' brings in ', B(pctOf(first.value, d.total)), ' of revenue; ', B(second.label), ` another ${pctOf(second.value, d.total)}.`],
+        ask: `Break down revenue by customer segment for ${ytd}. How does each segment compare with budget and with last year?`,
+      });
+    });
+
+    safe('revenue across the year', () => {
+      const r = c.revenue_year;
+      const byKey = Object.fromEntries(r.series.map((sr) => [sr.key, { ...sr, color: SERIES_COLOR[sr.key], emphasis: sr.key === 'actual' }]));
+      lineLegend(part('card-revenue-year', '[data-legend]'), [byKey.actual, byKey.budget, byKey.prior]);
+      // Drawn back to front so this year's actual sits on top.
+      C.lines(part('card-revenue-year', '[data-chart]'), {
+        labels: r.labels, series: [byKey.prior, byKey.budget, byKey.actual], labelSeries: 2, height: 250, animate,
+        ask: (i) => (byKey.actual.values[i] != null
+          ? `How did revenue in ${monthName(r.months[i])} compare with budget and with ${monthName(yearBefore(r.months[i]))}? What drove the difference?`
+          : `What revenue is budgeted for ${monthName(r.months[i])}, and how does it compare with ${monthName(yearBefore(r.months[i]))}?`),
+      });
+      C.table(part('card-revenue-year', '.chart-table'), ['Month', byKey.actual.name, byKey.budget.name, byKey.prior.name],
+        r.months.map((m, i) => [r.labels[i], C.eur(byKey.actual.values[i]), C.eur(byKey.budget.values[i]), C.eur(byKey.prior.values[i])]));
+      const g = c.growth && c.growth.revenue_vs_py_pct;
+      if (g == null) return;
+      const insight = ['Year-to-date revenue is ', B(`${upDown(g)} ${Math.abs(g).toFixed(1)}%`), ' on the same months last year'];
+      if (revenueStep && revenueStep.change_pct != null) insight.push(' and ', B(`${Math.abs(revenueStep.change_pct).toFixed(1)}% ${revenueStep.change_pct >= 0 ? 'above' : 'below'}`), ' budget');
+      insight.push('.');
+      decorate('card-revenue-year', { insight, ask: `How is revenue for ${c.fiscal_year} tracking against budget and last year, month by month?` });
+    });
+
+    safe('segments vs budget', () => {
+      const rows = [...c.segments_vs_budget].sort((a, b) => b.variance_pct - a.variance_pct);
+      C.diverging(part('card-segments', '[data-chart]'), {
+        colors: { good: 'var(--fav)', bad: 'var(--adv)' },
+        animate,
+        items: rows.map((sg) => ({
+          label: sg.label, value: sg.variance_pct, valueText: C.signedPct(sg.variance_pct), good: sg.variance >= 0,
+          tip: () => [C.ttTitle(`${sg.label} · ${ytd}`), C.ttRow(sg.variance >= 0 ? 'var(--fav)' : 'var(--adv)', `${C.signed(sg.variance, C.eur)} (${C.signedPct(sg.variance_pct)})`, 'vs budget'),
+            C.ttNote(`Actual ${C.eur(sg.actual)} · budget ${C.eur(sg.budget)}`)],
+          ask: `Why is ${sg.label} revenue ${Math.abs(sg.variance_pct).toFixed(1)}% ${sg.variance >= 0 ? 'above' : 'below'} budget for ${ytd}?`,
+        })),
+      });
+      C.table(part('card-segments', '.chart-table'), ['Segment', 'Actual', 'Budget', 'Variance', 'Var %'],
+        rows.map((sg) => [sg.label, C.eur(sg.actual), C.eur(sg.budget), C.signed(sg.variance, C.eur), C.signedPct(sg.variance_pct)]));
+      const above = rows.filter((sg) => sg.variance >= 0).length;
+      const worst = rows[rows.length - 1];
+      decorate('card-segments', {
+        insight: above === rows.length
+          ? ['All ', B(String(rows.length)), ' segments are above budget.']
+          : [B(`${above} of ${rows.length}`), ' segments are above budget; ', B(worst.label), ` is furthest below (${C.signedPct(worst.variance_pct)}).`],
+        ask: `Why are some customer segments above budget and others below for ${ytd}?`,
+      });
+    });
+
+    safe('EBIT vs budget', () => {
+      const e = c.ebit_trend;
+      const byKey = Object.fromEntries(e.series.map((sr) => [sr.key, { ...sr, color: SERIES_COLOR[sr.key] }]));
+      lineLegend(part('card-ebit', '[data-legend]'), [byKey.actual, byKey.budget]);
+      const act = byKey.actual.values;
+      const bud = byKey.budget.values;
+      C.lines(part('card-ebit', '[data-chart]'), {
+        labels: e.labels, series: [byKey.budget, byKey.actual], labelSeries: 1, height: 250, animate,
+        ask: (i) => (act[i] != null && bud[i] != null
+          ? `Why was EBIT in ${monthName(e.months[i])} ${act[i] >= bud[i] ? 'above' : 'below'} budget?`
+          : `Explain EBIT in ${monthName(e.months[i])}.`),
+      });
+      C.table(part('card-ebit', '.chart-table'), ['Month', 'EBIT actual', 'EBIT budget', 'Variance'],
+        e.months.map((m, i) => [e.labels[i] + ' ' + m.slice(0, 4), C.eur(act[i]), C.eur(bud[i]),
+          bud[i] == null ? 'n/a' : C.signed(act[i] - bud[i], C.eur)]));
+      const idx = e.months.map((m, i) => i).filter((i) => act[i] != null && bud[i] != null);
+      const beat = idx.filter((i) => act[i] >= bud[i]).length;
+      const last = idx[idx.length - 1];
+      if (!idx.length) { decorate('card-ebit', { insight: null, ask: 'Explain EBIT over the last 12 months.' }); return; }
+      decorate('card-ebit', {
+        insight: ['EBIT beat budget in ', B(`${beat} of ${idx.length === e.months.length ? `the last ${idx.length}` : `${idx.length} budgeted`}`), ' months; ',
+          `${monthName(e.months[last])} was `, B(C.signed(act[last] - bud[last], C.eur)), ' against budget.'],
+        ask: 'Explain EBIT against budget over the last 12 months. Which months missed budget, and why?',
+      });
+    });
+
+    safe('EBIT bridge', () => {
+      const br = c.ebit_bridge;
+      if (!br) return;
+      const tone = (v) => (v >= 0 ? 'var(--fav)' : 'var(--adv)');
+      const stepAsk = (s) => {
+        if (s.key === 'revenue') return `Which customer segments drove the revenue variance to budget for ${ytd}?`;
+        if (s.type === 'expense') return `Why are ${s.label} costs ${s.actual > s.budget ? 'over' : 'under'} budget for ${ytd}?`;
+        return null;
+      };
+      C.waterfall(part('card-bridge', '[data-chart]'), {
+        colors: { up: 'var(--fav)', down: 'var(--adv)', total: 'var(--total)' }, height: 250, animate,
+        start: {
+          label: ['Budget', 'EBIT'], value: br.budget,
+          tip: () => [C.ttTitle(`EBIT budget · ${ytd}`), C.ttRow('var(--total)', C.eur(br.budget), 'budget')],
+          ask: `How is the EBIT budget for ${ytd} built up?`,
+        },
+        steps: br.steps.map((s) => ({
+          label: s.label, value: s.effect, ask: stepAsk(s),
+          tip: () => [C.ttTitle(`${s.label} · ${ytd}`), C.ttRow(tone(s.effect), C.signed(s.effect, C.eur), s.effect >= 0 ? 'raises EBIT vs budget' : 'lowers EBIT vs budget'),
+            s.actual == null ? null : C.ttNote(`Actual ${C.eur(s.actual)} · budget ${C.eur(s.budget)} (${C.signedPct(s.change_pct)})`)],
+        })),
+        end: {
+          label: ['Actual', 'EBIT'], value: br.actual,
+          tip: () => [C.ttTitle(`EBIT actual · ${ytd}`), C.ttRow('var(--total)', C.eur(br.actual), 'actual'), C.ttNote(`${C.signed(br.variance, C.eur)} (${C.signedPct(br.variance_pct)}) vs budget`)],
+          ask: `Explain actual EBIT for ${ytd} against budget: what drove the difference?`,
+        },
+      });
+      part('card-bridge', '[data-sub]').textContent = `${ytd} · effect of each line on EBIT`;
+      C.table(part('card-bridge', '.chart-table'), ['Line', 'Actual', 'Budget', 'Effect on EBIT'], [
+        ['EBIT budget', '', eur2(br.budget), ''],
+        ...br.steps.map((s) => [s.label, eur2(s.actual), eur2(s.budget), signed2(s.effect)]),
+        ['EBIT actual', eur2(br.actual), '', signed2(br.variance)],
+      ]);
+      const byEffect = [...br.steps].sort((a, b) => b.effect - a.effect);
+      const lift = byEffect[0];
+      const drag = byEffect[byEffect.length - 1];
+      const insight = ['EBIT is ', B(`${C.eur(Math.abs(br.variance))} ${br.variance >= 0 ? 'above' : 'below'}`), ` budget (${C.signedPct(br.variance_pct)}). `];
+      if (lift.effect > 0) insight.push('Biggest lift: ', B(`${lift.label} ${C.signed(lift.effect, C.eur)}`));
+      if (drag.effect < 0) insight.push(lift.effect > 0 ? '; biggest drag: ' : 'Biggest drag: ', B(`${drag.label} ${C.signed(drag.effect, C.eur)}`));
+      insight.push('.');
+      decorate('card-bridge', { insight, ask: `Explain the EBIT variance to budget for ${ytd}, line by line.` });
+    });
+
+    safe('cost mix', () => {
+      const items = c.cost_mix.items.map((x) => ({
+        ...x,
+        ask: x.parts
+          ? `Which accounts make up the other operating costs (${x.parts.join(', ')}) for ${ytd}?`
+          : `Which accounts make up ${x.label} costs for ${ytd}, and how do they compare with last year?`,
+      }));
+      const colors = slotColors(items, COST_SLOT);
+      const d = C.donut(part('card-cost-mix', '[data-chart]'), { items, colors, centerLabel: 'costs YTD', animate });
+      C.donutLegend(part('card-cost-mix', '[data-legend]'), items, colors, d.total, { onHover: d.highlight });
+      part('card-cost-mix', '[data-sub]').textContent = `${ytd} · operating costs by type`;
+      C.table(part('card-cost-mix', '.chart-table'), ['Cost type', 'Amount', 'Share'], items.map((x) => [x.parts ? `${x.label} (${x.parts.join(', ')})` : x.label, C.eur(x.value), pctOf(x.value, d.total)]));
+      const [first, second] = [...items].sort((a, b) => b.value - a.value);
+      decorate('card-cost-mix', {
+        insight: [B(first.label), ' is ', B(pctOf(first.value, d.total)), ' of operating costs; ', B(second.label), ` another ${pctOf(second.value, d.total)}.`],
+        ask: `Break down operating costs by type for ${ytd} and compare them with last year.`,
+      });
+    });
+
+    safe('cost movers', () => {
+      const rows = c.cost_movers.items;
+      const cmp = c.cost_movers.comparison;
+      C.diverging(part('card-cost-movers', '[data-chart]'), {
+        colors: { good: 'var(--fav)', bad: 'var(--adv)' },
+        animate,
+        items: rows.map((mv) => ({
+          label: mv.label, value: mv.change, valueText: C.signed(mv.change), good: mv.change < 0,
+          tip: () => [C.ttTitle(mv.account), C.ttRow(mv.change < 0 ? 'var(--fav)' : 'var(--adv)', `${C.signed(mv.change, C.eur)}${mv.change_pct == null ? '' : ` (${C.signedPct(mv.change_pct)})`}`, 'vs last year'),
+            C.ttNote(`${ytd}: ${C.eur(mv.actual)} · ${cmp}: ${C.eur(mv.prior)}`)],
+          ask: `Why did ${mv.account} change by ${C.signed(mv.change, C.eur)} in ${ytd} compared with ${cmp}?`,
+        })),
+      });
+      part('card-cost-movers', '[data-sub]').textContent = `${ytd} vs ${cmp}, largest changes by account`;
+      C.table(part('card-cost-movers', '.chart-table'), ['Account', 'This year', 'Last year', 'Change', 'Change %'],
+        rows.map((mv) => [mv.label, C.eur(mv.actual), C.eur(mv.prior), C.signed(mv.change, C.eur), C.signedPct(mv.change_pct)]));
+      const sorted = [...rows].sort((a, b) => b.change - a.change);
+      const up = sorted[0];
+      const down = sorted[sorted.length - 1];
+      const insight = [];
+      if (up && up.change > 0) insight.push(B(up.label), ' rose the most (', B(C.signed(up.change, C.eur)), ')');
+      if (down && down.change < 0) insight.push(insight.length ? '; ' : '', B(down.label), ' fell the most (', B(C.signed(down.change, C.eur)), ')');
+      if (insight.length) insight.push('.');
+      decorate('card-cost-movers', { insight: insight.length ? insight : null, ask: `Which costs changed the most in ${ytd} compared with ${cmp}, and why?` });
+    });
+
+    safe('balance-sheet movements', () => {
+      if (!c.balance_moves) return;
+      const bm = c.balance_moves;
+      const sideName = { asset: 'Asset', liability: 'Liability', equity: 'Equity' };
+      C.diverging(part('card-bs-moves', '[data-chart]'), {
+        animate,
+        items: bm.items.map((mv) => ({
+          label: mv.label, value: mv.movement, valueText: C.signed(mv.movement), color: mv.side === 'asset' ? 'var(--cat-1)' : 'var(--cat-3)',
+          tip: () => [C.ttTitle(mv.account), C.ttRow(mv.side === 'asset' ? 'var(--cat-1)' : 'var(--cat-3)', C.signed(mv.movement, C.eur), `${sideName[mv.side] || mv.side} · ${mv.group}`),
+            C.ttNote(`${C.eur(mv.opening)} → ${C.eur(mv.closing)}${mv.movement_pct == null ? '' : ` (${C.signedPct(mv.movement_pct)})`}`)],
+          ask: `Why did ${mv.account} move by ${C.signed(mv.movement, C.eur)} between the ${bm.since} and the ${bm.as_of}?`,
+        })),
+      });
+      part('card-bs-moves', '[data-sub]').textContent = `From the ${bm.since} to the ${bm.as_of} · movements of €${Math.round(bm.materiality / 1000)}k or more`;
+      C.table(part('card-bs-moves', '.chart-table'), ['Account', 'Side', 'Opening', 'Closing', 'Movement'],
+        bm.items.map((mv) => [mv.label, sideName[mv.side] || mv.side, C.eur(mv.opening), C.eur(mv.closing), C.signed(mv.movement, C.eur)]));
+      const top = [...bm.items].sort((a, b) => Math.abs(b.movement) - Math.abs(a.movement))[0];
+      decorate('card-bs-moves', {
+        insight: top ? [B(top.label), ' moved the most: ', B(C.signed(top.movement, C.eur)), ` (${C.eur(top.opening)} → ${C.eur(top.closing)}).`] : null,
+        ask: 'Explain the largest balance-sheet movements since the start of the financial year.',
+      });
+    });
+
+    safe('asset mix', () => {
+      if (!c.asset_mix) return;
+      const am = c.asset_mix;
+      const items = am.items.map((x) => ({ ...x, ask: `What is in ${x.label} at the ${am.as_of}, and how has it moved since the start of the year?` }));
+      const d = C.donut(part('card-assets', '[data-chart]'), { items, colors: CAT, centerLabel: 'total assets', animate });
+      C.donutLegend(part('card-assets', '[data-legend]'), items, CAT, d.total, { onHover: d.highlight });
+      C.table(part('card-assets', '.chart-table'), ['Asset', 'Closing balance', 'Share'], items.map((x) => [x.label, C.eur(x.value), pctOf(x.value, d.total)]));
+      const top = [...items].sort((a, b) => b.value - a.value)[0];
+      decorate('card-assets', {
+        insight: [B(top.label), ' is ', B(pctOf(top.value, d.total)), ` of total assets (${C.eurShort(d.total)}).`],
+        ask: `What makes up total assets at the ${am.as_of}, and how has that changed since the start of the year?`,
+      });
+    });
+
+    safe('invoicing', () => {
+      if (!c.invoicing) return;
+      const inv = c.invoicing;
+      C.columns(part('card-invoicing', '[data-chart]'), {
+        color: 'var(--forecast)', height: 240, animate,
+        items: inv.items.map((it) => ({
+          label: it.label, short: it.label.slice(0, 3), value: it.value,
+          tip: () => [C.ttTitle(it.label), C.ttRow('var(--forecast)', C.eur(it.value), 'forecast invoicing'), C.ttNote(`${it.invoices} invoice${it.invoices === 1 ? '' : 's'}`)],
+          ask: `Which invoices are in the invoicing forecast for ${it.label}?`,
+        })),
+      });
+      const first = inv.items[0];
+      const last = inv.items[inv.items.length - 1];
+      part('card-invoicing', '[data-sub]').textContent = `${C.eur(inv.total)} expected, ${first.label} – ${last.label} · billing, not P&L revenue`;
+      C.table(part('card-invoicing', '.chart-table'), ['Invoice month', 'Amount', 'Invoices'], inv.items.map((it) => [it.label, C.eur(it.value), String(it.invoices)]));
+      const peak = inv.items.reduce((a, it) => (it.value > a.value ? it : a));
+      decorate('card-invoicing', {
+        insight: [B(peak.label), ' is the peak: ', B(C.eur(peak.value)), ` from ${peak.invoices} invoice${peak.invoices === 1 ? '' : 's'} (${pctOf(peak.value, inv.total)} of the forecast).`],
+        ask: 'Summarise the invoicing forecast by month, and explain how it differs from P&L revenue.',
+      });
+    });
+
+    safe('invoice sizes', () => {
+      if (!c.invoice_sizes) return;
+      const h = c.invoice_sizes;
+      C.histogram(part('card-invoice-sizes', '[data-chart]'), {
+        bins: h.bins, color: 'var(--forecast)', height: 240, animate,
+        ask: (b) => `Which invoices in the invoicing forecast are between €${b.from / 1000}k and €${b.to / 1000}k?`,
+      });
+      part('card-invoice-sizes', '[data-sub]').textContent = `${h.invoices} invoices per €10k band · median ${C.eur(h.median)}`;
+      C.table(part('card-invoice-sizes', '.chart-table'), ['Invoice size', 'Invoices', 'Total'],
+        h.bins.map((b) => [`€${b.from / 1000}k – €${b.to / 1000}k`, String(b.count), C.eur(b.amount)]));
+      decorate('card-invoice-sizes', {
+        insight: ['Half the invoices are under ', B(C.eur(h.median)), '; the largest is ', B(C.eur(h.largest)), '.'],
+        ask: 'Which are the largest invoices in the invoicing forecast, and are there any possible duplicates?',
+      });
+    });
+
+    // Now that the cards beside it are drawn, let the revenue chart take its row's height.
+    if (lastTrend) renderChart(lastTrend, animate);
+  }
+
+  // Every chart card has a Table view (the accessible twin of the chart).
+  document.querySelectorAll('.chart-block .table-toggle').forEach((btn) => btn.addEventListener('click', () => {
+    const t = btn.closest('.chart-block').querySelector('.chart-table');
+    t.hidden = !t.hidden;
+    btn.setAttribute('aria-expanded', String(!t.hidden));
+    btn.classList.toggle('active', !t.hidden);
+    btn.lastChild.textContent = t.hidden ? 'Table' : 'Hide';
+  }));
+
   function renderChartTable(points) {
     $('chart-table').replaceChildren(el('table', { class: 'mini' },
       el('thead', {}, el('tr', {}, ['Month', 'Actual', 'Budget', 'Var %'].map((h) => el('th', { text: h })))),
@@ -554,6 +972,7 @@
 
   function renderBalance(b) {
     const list = $('balance');
+    if (!list) { $('bs-asof').textContent = b ? `As at ${b.as_of}` : 'No trial balance loaded'; return; }
     list.replaceChildren();
     if (!b) { list.append(el('div', { class: 'side-note', text: 'No trial balance loaded.' })); return; }
     $('bs-asof').textContent = `As at ${b.as_of}, vs start of year`;
@@ -588,29 +1007,32 @@
     const badge = $('health-badge');
     badge.hidden = !high;
     badge.textContent = high;
-    const hc = $('health-chip');
-    hc.hidden = !(high || medium);
-    hc.replaceChildren(el('span', { class: `sev-dot ${high ? 'high' : 'medium'}` }), el('span', { text: `${high ? `${high} high` : ''}${high && medium ? ' · ' : ''}${medium ? `${medium} medium` : ''} data findings` }));
+    for (const id of ['health-chip', 'home-health-chip']) {
+      const hc = $(id);
+      hc.hidden = !(high || medium);
+      hc.replaceChildren(el('span', { class: `sev-dot ${high ? 'high' : 'medium'}` }), el('span', { text: `${high ? `${high} high` : ''}${high && medium ? ' · ' : ''}${medium ? `${medium} medium` : ''} data findings` }));
+    }
 
     const list = issues.list.filter((i) => healthFilter === 'all' || i.severity === 'high' || i.severity === 'medium');
     $('findings').replaceChildren(...list.map((i, n) => el('li', {}, el('button', {
       class: 'finding spot',
       type: 'button',
       style: `--d:${Math.min(n, 12) * 45}ms`,
-      onclick: () => { closeDrawer(); ask(`Explain data-quality finding ${i.id} ("${i.title}"): what is wrong, which reported figures it affects, and what should be done about it.`); },
+      onclick: () => openAi(`Explain data-quality finding ${i.id} ("${i.title}"): what is wrong, which reported figures it affects, and what should be done about it.`),
     },
     el('div', { class: 'finding-top' },
       el('span', { class: `sev ${i.severity}` }, icon(SEV_ICON[i.severity]), i.severity),
       el('span', { class: 'finding-area', text: i.area })),
     el('div', { class: 'finding-title', text: i.title }),
-    el('span', { class: 'finding-ask' }, icon('Sparkles'), 'Ask the analyst')))));
+    el('span', { class: 'finding-ask' }, icon('Sparkles'), 'Ask Reflex AI')))));
   }
   document.querySelectorAll('#health-filter .chip-btn').forEach((b) => b.addEventListener('click', () => {
     healthFilter = b.dataset.filter;
     document.querySelectorAll('#health-filter .chip-btn').forEach((x) => x.classList.toggle('active', x === b));
     if (overviewData) renderHealth(overviewData.issues);
   }));
-  $('health-chip').addEventListener('click', () => { selectTab('health'); openDrawer(); });
+  $('health-chip').addEventListener('click', openChecks);
+  $('home-health-chip').addEventListener('click', openChecks);
 
   function renderSources(o) {
     $('sources').replaceChildren(...o.sources.map((s, i) => el('li', { class: 'source', style: `--d:${i * 60}ms` },
@@ -644,6 +1066,7 @@
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
       if (lastTrend) renderChart(lastTrend, false);
+      if (lastCharts && currentView === 'home') renderDashboard(lastCharts, false);
       realignIndicators();
     }, 120);
   });
@@ -663,6 +1086,21 @@
   }
   renderGreeting();
   renderPrompts();
+
+  // Dashboard: greeting, "Ask Reflex AI" bar and quick questions that open the chat.
+  {
+    const hour = new Date().getHours();
+    $('dash-greeting').textContent = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+    const quick = [PROMPTS[0], PROMPTS[2], PROMPTS[4], PROMPTS[9]];
+    $('dash-chips').replaceChildren(...quick.map((p) => el('button', { class: 'dash-chip', type: 'button', onclick: () => openAi(p.q) }, icon(p.icon), p.cat)));
+    $('dash-ask').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const q = $('dash-ask-input').value.trim();
+      if (!q) { openAi(); return; }
+      $('dash-ask-input').value = '';
+      openAi(q);
+    });
+  }
 
   // Typewriter placeholder cycling through example questions while the box is empty.
   const input = $('input');
@@ -809,7 +1247,7 @@
     document.querySelector('.status-dot').classList.toggle('offline', !value);
     const note = $('model-note');
     note.parentElement.classList.toggle('offline', !value);
-    note.textContent = value ? `Data loaded · ${overviewData ? overviewData.model : 'AI analyst'}` : 'Server unreachable · retrying…';
+    note.textContent = value ? `Online · ${overviewData ? overviewData.model : 'AI analyst'}` : 'Offline · retrying…';
     if (value) {
       clearInterval(healthTimer);
       healthTimer = null;
@@ -840,7 +1278,7 @@
     const actions = el('div', { class: 'msg-actions', hidden: true });
     const avatar = el('div', { class: 'avatar working' }, icon('Sparkles'));
     const body = el('div', { class: 'msg-body' },
-      el('div', { class: 'msg-meta' }, el('span', { class: 'msg-name', text: 'WACD Analyst' }), el('span', { class: 'msg-time', text: nowTime() })),
+      el('div', { class: 'msg-meta' }, el('span', { class: 'msg-name', text: 'Reflex AI' }), el('span', { class: 'msg-time', text: nowTime() })),
       thinking, work, answer, actions);
     const node = el('div', { class: 'msg assistant' }, avatar, body);
     $('messages').append(node);
@@ -1056,9 +1494,10 @@
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeDrawer();
     if (e.key === '/' && !/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) { e.preventDefault(); input.focus(); }
   });
+
+  showView(viewFromHash(), true);
 
   loadOverview().catch((e) => {
     $('ws-meta').textContent = 'Data failed to load';

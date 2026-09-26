@@ -3,6 +3,7 @@ const config = require('../config');
 const P = require('../lib/periods');
 const { plStatement, plTrend } = require('./pl');
 const { balanceSheet } = require('./balance');
+const { dashboardCharts } = require('./dashboard');
 
 const SOURCE_ROLES = {
   plWorkfile: 'Primary source of P&L actuals (account level, monthly)',
@@ -68,6 +69,7 @@ function overview(store) {
       total: (store.issues || []).length,
       list: (store.issues || []).map((i) => ({ id: i.id, severity: i.severity, area: i.area, title: i.title })),
     },
+    charts: dashboardCharts(store),
     loaded_at: store.loadedAt,
   };
 }

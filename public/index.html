@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f4f4f2" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#09090a" media="(prefers-color-scheme: dark)">
-  <title>WACD Analyst</title>
+  <title>Home · WACD Analyst</title>
   <link rel="preload" href="/fonts/geist-sans.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/styles.css">
   <script>
@@ -15,16 +15,15 @@
 </head>
 <body>
   <div class="app">
-    <!-- ============ Sidebar ============ -->
-    <aside class="sidebar" id="sidebar" aria-label="Financial overview">
-      <div class="side-top">
+    <!-- ============ Navigation ============ -->
+    <nav class="nav" aria-label="Main navigation">
+      <div class="nav-top">
         <div class="brand">
           <div class="logo" aria-hidden="true"><span data-icon="Sparkles"></span></div>
           <div class="brand-text">
             <div class="brand-name">WACD Analyst</div>
             <div class="brand-by">by Offspring</div>
           </div>
-          <button class="icon-btn only-mobile" id="close-sidebar" aria-label="Close panel"><span data-icon="X"></span></button>
         </div>
 
         <div class="workspace">
@@ -35,80 +34,21 @@
           </div>
         </div>
 
-        <div class="tabs" role="tablist" aria-label="Sidebar sections">
-          <span class="tab-ind" aria-hidden="true"></span>
-          <button role="tab" class="tab active" aria-selected="true" data-tab="overview"><span data-icon="LayoutDashboard"></span>Overview</button>
-          <button role="tab" class="tab" aria-selected="false" data-tab="health"><span data-icon="ShieldCheck"></span>Checks<span class="tab-badge" id="health-badge" hidden></span></button>
-          <button role="tab" class="tab" aria-selected="false" data-tab="sources"><span data-icon="Database"></span>Sources</button>
+        <div class="nav-label">Menu</div>
+        <div class="nav-items">
+          <span class="nav-ind" aria-hidden="true"></span>
+          <a class="nav-item" href="#/home" data-view="home">
+            <span data-icon="LayoutDashboard"></span><span class="nav-text">Home</span>
+            <span class="nav-badge" id="health-badge" title="High-priority data findings" hidden></span>
+          </a>
+          <a class="nav-item" href="#/ai" data-view="ai">
+            <span data-icon="Sparkles"></span><span class="nav-text">Reflex AI</span>
+            <span class="nav-tag">AI</span>
+          </a>
         </div>
       </div>
 
-      <div class="side-scroll">
-        <!-- Overview -->
-        <section class="panel" data-panel="overview" role="tabpanel">
-          <div class="period">
-            <div class="period-row">
-              <div>
-                <div class="eyebrow" id="fy-label">Year to date</div>
-                <div class="period-range" id="ytd-range">&nbsp;</div>
-              </div>
-              <div class="period-count" id="fy-count"></div>
-            </div>
-            <div class="meter" aria-hidden="true"><div class="meter-fill" id="fy-meter"></div></div>
-          </div>
-
-          <div class="kpis" id="kpis">
-            <div class="kpi skeleton"></div><div class="kpi skeleton"></div><div class="kpi skeleton"></div>
-          </div>
-
-          <div class="card chart-card spot">
-            <div class="card-head">
-              <div>
-                <div class="card-title">Revenue vs budget</div>
-                <div class="card-sub">Last 12 months, monthly</div>
-              </div>
-              <button class="chip-btn" id="chart-table-toggle" aria-expanded="false"><span data-icon="Table2"></span><span>Table</span></button>
-            </div>
-            <div class="legend">
-              <span><i class="key key-bar"></i>Actual</span>
-              <span><i class="key key-line"></i>Budget</span>
-            </div>
-            <div class="chart" id="chart" role="img" aria-label="Monthly revenue, actual versus budget"></div>
-            <div id="chart-table" hidden></div>
-          </div>
-
-          <div class="card spot">
-            <div class="card-head">
-              <div>
-                <div class="card-title">Balance sheet</div>
-                <div class="card-sub" id="bs-asof">&nbsp;</div>
-              </div>
-            </div>
-            <div class="bs-list" id="balance"></div>
-          </div>
-        </section>
-
-        <!-- Data health -->
-        <section class="panel" data-panel="health" role="tabpanel" hidden>
-          <div class="health-summary" id="health-summary"></div>
-          <p class="side-note">The source files are cross-checked on load. Click a finding to ask the analyst about it.</p>
-          <div class="filter-row" id="health-filter">
-            <button class="chip-btn active" data-filter="important">High &amp; medium</button>
-            <button class="chip-btn" data-filter="all">All findings</button>
-          </div>
-          <ul class="findings" id="findings"></ul>
-        </section>
-
-        <!-- Sources -->
-        <section class="panel" data-panel="sources" role="tabpanel" hidden>
-          <p class="side-note">Files are read from the <code>Data</code> folder. Drop in new month-end files and reload.</p>
-          <ul class="source-list" id="sources"></ul>
-          <button class="btn-secondary wide" id="reload"><span data-icon="RefreshCw"></span><span>Reload data</span></button>
-          <div class="side-note center" id="loaded-at"></div>
-        </section>
-      </div>
-
-      <div class="side-foot">
+      <div class="nav-foot">
         <div class="theme-toggle" role="radiogroup" aria-label="Theme">
           <span class="seg-ind" aria-hidden="true"></span>
           <button role="radio" data-theme-choice="light" aria-label="Light theme"><span data-icon="Sun"></span></button>
@@ -117,11 +57,9 @@
         </div>
         <div class="foot-note"><span class="status-dot"></span><span id="model-note">AI analyst</span></div>
       </div>
-    </aside>
-    <div class="scrim" id="scrim" hidden></div>
+    </nav>
 
-    <!-- ============ Main ============ -->
-    <main class="main" id="main" aria-label="Analyst chat">
+    <main class="main" id="main">
       <div class="bg-fx" id="bg-fx" aria-hidden="true">
         <div class="bg-aurora"><i class="au au1"></i><i class="au au2"></i><i class="au au3"></i></div>
         <div class="bg-grid"></div>
@@ -129,39 +67,297 @@
         <canvas class="bg-waves" id="bg-waves"></canvas>
         <div class="bg-grain"></div>
       </div>
-      <header class="main-head">
-        <div class="head-left">
-          <button class="icon-btn only-mobile" id="open-sidebar" aria-label="Open overview"><span data-icon="PanelLeft"></span></button>
-          <div class="head-title" id="chat-title">New analysis</div>
-          <span class="head-chip hide-sm" id="period-chip"><span data-icon="CalendarDays"></span><span>Loading…</span></span>
-        </div>
-        <div class="head-right">
-          <button class="head-chip clickable hide-sm" id="health-chip" hidden><span class="sev-dot"></span><span></span></button>
-          <button class="btn-secondary" id="newchat"><span data-icon="Plus"></span><span class="hide-sm">New chat</span></button>
-        </div>
-      </header>
 
-      <div class="thread" id="thread">
-        <div class="hero" id="hero">
-          <div class="hero-glow" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i></div>
-          <div class="hero-pill"><span data-icon="Sparkles"></span><span id="hero-pill-text">AI analyst grounded in your source files</span></div>
-          <h1 class="hero-title"><span id="greeting">Hello.</span><br><span class="hero-sub" id="hero-sub">What would you like to know about WACD’s finances?</span></h1>
-          <div class="prompts" id="prompts"></div>
-        </div>
-        <div class="messages" id="messages" aria-live="polite"></div>
-      </div>
-
-      <div class="composer-wrap">
-        <form class="composer" id="composer">
-          <textarea id="input" rows="1" placeholder="Ask about revenue, costs, budget, balance sheet…" aria-label="Your question"></textarea>
-          <div class="composer-bar">
-            <span class="composer-hint"><span data-icon="Sparkles"></span><span id="composer-model">Grounded in 4 source files</span></span>
-            <span class="kbd-hint hide-sm"><kbd>Enter</kbd> to send · <kbd>Shift</kbd>+<kbd>Enter</kbd> new line</span>
-            <button type="submit" class="send" id="send" aria-label="Send"><span data-icon="ArrowUp"></span></button>
+      <!-- ============ Home: dashboard ============ -->
+      <section class="view view-home" id="view-home" data-view="home" aria-label="Home dashboard">
+        <header class="main-head">
+          <div class="head-left">
+            <div class="head-title">Home</div>
+            <span class="head-chip hide-sm" id="home-period-chip"><span data-icon="CalendarDays"></span><span>Loading…</span></span>
           </div>
-        </form>
-        <div class="disclaimer">AI-generated analysis. Figures are computed from the source files; review before sharing externally.</div>
-      </div>
+          <div class="head-right">
+            <button class="head-chip clickable hide-sm" id="home-health-chip" hidden><span class="sev-dot"></span><span></span></button>
+            <button class="btn-secondary" id="reload" title="Re-read the files in the Data folder"><span data-icon="RefreshCw"></span><span class="hide-sm">Reload data</span></button>
+          </div>
+        </header>
+
+        <div class="dash-scroll">
+          <div class="dash">
+            <div class="dash-hero">
+              <div class="dash-intro">
+                <div class="eyebrow" id="dash-greeting">Welcome</div>
+                <h1 class="dash-title">Financial overview</h1>
+                <div class="dash-sub" id="dash-sub">Loading the latest figures…</div>
+              </div>
+              <div class="card period-card">
+                <div class="period">
+                  <div class="period-row">
+                    <div>
+                      <div class="eyebrow" id="fy-label">Year to date</div>
+                      <div class="period-range" id="ytd-range">&nbsp;</div>
+                    </div>
+                    <div class="period-count" id="fy-count"></div>
+                  </div>
+                  <div class="meter" aria-hidden="true"><div class="meter-fill" id="fy-meter"></div></div>
+                </div>
+                <div class="plan" id="plan-progress" hidden></div>
+              </div>
+            </div>
+
+            <form class="dash-ask" id="dash-ask" autocomplete="off">
+              <span class="dash-ask-icon" aria-hidden="true"><span data-icon="Sparkles"></span></span>
+              <input id="dash-ask-input" type="text" placeholder="Ask Reflex AI about these numbers…" aria-label="Ask Reflex AI">
+              <button type="submit" class="send" aria-label="Ask Reflex AI"><span data-icon="ArrowUp"></span></button>
+            </form>
+            <div class="dash-chips" id="dash-chips"></div>
+
+            <div class="kpis" id="kpis">
+              <div class="kpi skeleton"></div><div class="kpi skeleton"></div><div class="kpi skeleton"></div>
+            </div>
+
+            <div class="dash-grid">
+              <h2 class="grid-title"><span data-icon="TrendingUp"></span>Revenue</h2>
+
+              <div class="card chart-card spot span-2" id="card-revenue">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">Revenue vs budget</div>
+                    <div class="card-sub">Last 12 months, monthly</div>
+                  </div>
+                  <button class="chip-btn" id="chart-table-toggle" aria-expanded="false"><span data-icon="Table2"></span><span>Table</span></button>
+                </div>
+                <div class="legend">
+                  <span><i class="key key-bar"></i>Actual</span>
+                  <span><i class="key key-line"></i>Budget</span>
+                </div>
+                <div class="chart" id="chart" data-height="250" role="img" aria-label="Monthly revenue, actual versus budget"></div>
+                <div id="chart-table" hidden></div>
+              </div>
+
+              <div class="card chart-block spot" id="card-revenue-mix">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">Revenue mix</div>
+                    <div class="card-sub" data-sub>Year to date, by customer segment</div>
+                  </div>
+                  <button class="chip-btn table-toggle" aria-expanded="false"><span data-icon="Table2"></span><span>Table</span></button>
+                </div>
+                <div class="donut-wrap"><div class="donut-host" data-chart></div><ul class="legend-list" data-legend></ul></div>
+                <div class="chart-table" hidden></div>
+              </div>
+
+              <div class="card chart-block spot span-2" id="card-revenue-year">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">Revenue across the financial year</div>
+                    <div class="card-sub" data-sub>Monthly revenue, this year vs budget and last year</div>
+                  </div>
+                  <button class="chip-btn table-toggle" aria-expanded="false"><span data-icon="Table2"></span><span>Table</span></button>
+                </div>
+                <div class="legend" data-legend></div>
+                <div data-chart></div>
+                <div class="chart-table" hidden></div>
+              </div>
+
+              <div class="card chart-block spot" id="card-segments">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">Segments vs budget</div>
+                    <div class="card-sub" data-sub>Year to date, variance to budget</div>
+                  </div>
+                  <button class="chip-btn table-toggle" aria-expanded="false"><span data-icon="Table2"></span><span>Table</span></button>
+                </div>
+                <div class="legend">
+                  <span><i class="key key-bar" style="background:var(--fav)"></i>Above budget</span>
+                  <span><i class="key key-bar" style="background:var(--adv)"></i>Below budget</span>
+                </div>
+                <div data-chart></div>
+                <div class="chart-table" hidden></div>
+              </div>
+
+              <h2 class="grid-title"><span data-icon="Coins"></span>Profitability &amp; costs</h2>
+
+              <div class="card chart-block spot span-2" id="card-ebit">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">EBIT vs budget</div>
+                    <div class="card-sub" data-sub>Last 12 months, monthly</div>
+                  </div>
+                  <button class="chip-btn table-toggle" aria-expanded="false"><span data-icon="Table2"></span><span>Table</span></button>
+                </div>
+                <div class="legend" data-legend></div>
+                <div data-chart></div>
+                <div class="chart-table" hidden></div>
+              </div>
+
+              <div class="card chart-block spot" id="card-bridge">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">EBIT bridge: budget to actual</div>
+                    <div class="card-sub" data-sub>Year to date, effect of each line on EBIT</div>
+                  </div>
+                  <button class="chip-btn table-toggle" aria-expanded="false"><span data-icon="Table2"></span><span>Table</span></button>
+                </div>
+                <div class="legend">
+                  <span><i class="key key-bar" style="background:var(--total)"></i>EBIT</span>
+                  <span><i class="key key-bar" style="background:var(--fav)"></i>Raises EBIT</span>
+                  <span><i class="key key-bar" style="background:var(--adv)"></i>Lowers EBIT</span>
+                </div>
+                <div data-chart></div>
+                <div class="chart-table" hidden></div>
+              </div>
+
+              <div class="card chart-block spot span-2" id="card-cost-movers">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">Biggest cost changes</div>
+                    <div class="card-sub" data-sub>Year to date vs the same months last year</div>
+                  </div>
+                  <button class="chip-btn table-toggle" aria-expanded="false"><span data-icon="Table2"></span><span>Table</span></button>
+                </div>
+                <div class="legend">
+                  <span><i class="key key-bar" style="background:var(--adv)"></i>Cost up (adverse)</span>
+                  <span><i class="key key-bar" style="background:var(--fav)"></i>Cost down (favourable)</span>
+                </div>
+                <div data-chart></div>
+                <div class="chart-table" hidden></div>
+              </div>
+
+              <div class="card chart-block spot" id="card-cost-mix">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">Cost mix</div>
+                    <div class="card-sub" data-sub>Year to date, operating costs by type</div>
+                  </div>
+                  <button class="chip-btn table-toggle" aria-expanded="false"><span data-icon="Table2"></span><span>Table</span></button>
+                </div>
+                <div class="donut-wrap"><div class="donut-host" data-chart></div><ul class="legend-list" data-legend></ul></div>
+                <div class="chart-table" hidden></div>
+              </div>
+
+              <h2 class="grid-title"><span data-icon="Landmark"></span>Balance sheet</h2>
+
+              <div class="card chart-block spot span-2" id="card-bs-moves">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">Largest balance-sheet movements</div>
+                    <div class="card-sub" data-sub>Since the start of the financial year</div>
+                  </div>
+                  <button class="chip-btn table-toggle" aria-expanded="false"><span data-icon="Table2"></span><span>Table</span></button>
+                </div>
+                <div class="legend">
+                  <span><i class="key key-bar" style="background:var(--cat-1)"></i>Asset</span>
+                  <span><i class="key key-bar" style="background:var(--cat-3)"></i>Liability or equity</span>
+                </div>
+                <div data-chart></div>
+                <div class="chart-table" hidden></div>
+              </div>
+
+              <div class="card chart-block spot" id="card-assets">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">Asset mix</div>
+                    <div class="card-sub" id="bs-asof">&nbsp;</div>
+                  </div>
+                  <button class="chip-btn table-toggle" aria-expanded="false"><span data-icon="Table2"></span><span>Table</span></button>
+                </div>
+                <div class="donut-wrap"><div class="donut-host" data-chart></div><ul class="legend-list" data-legend></ul></div>
+                <div class="chart-table" hidden></div>
+              </div>
+
+              <h2 class="grid-title"><span data-icon="CalendarDays"></span>Invoicing forecast</h2>
+
+              <div class="card chart-block spot span-2" id="card-invoicing">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">Invoicing forecast by month</div>
+                    <div class="card-sub" data-sub>Expected subscription invoices (billing, not P&amp;L revenue)</div>
+                  </div>
+                  <button class="chip-btn table-toggle" aria-expanded="false"><span data-icon="Table2"></span><span>Table</span></button>
+                </div>
+                <div data-chart></div>
+                <div class="chart-table" hidden></div>
+              </div>
+
+              <div class="card chart-block spot" id="card-invoice-sizes">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">Invoice size distribution</div>
+                    <div class="card-sub" data-sub>Number of invoices per €10k band</div>
+                  </div>
+                  <button class="chip-btn table-toggle" aria-expanded="false"><span data-icon="Table2"></span><span>Table</span></button>
+                </div>
+                <div data-chart></div>
+                <div class="chart-table" hidden></div>
+              </div>
+
+              <h2 class="grid-title"><span data-icon="ShieldCheck"></span>Data</h2>
+
+              <div class="card span-2 checks-card" id="checks-card">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">Data checks</div>
+                    <div class="card-sub">Source files cross-checked on load · click a finding to ask Reflex AI</div>
+                  </div>
+                  <div class="filter-row" id="health-filter">
+                    <button class="chip-btn active" data-filter="important">High &amp; medium</button>
+                    <button class="chip-btn" data-filter="all">All</button>
+                  </div>
+                </div>
+                <div class="health-summary" id="health-summary"></div>
+                <ul class="findings" id="findings"></ul>
+              </div>
+
+              <div class="card sources-card">
+                <div class="card-head">
+                  <div>
+                    <div class="card-title">Sources</div>
+                    <div class="card-sub">Read from the <code>Data</code> folder</div>
+                  </div>
+                </div>
+                <ul class="source-list" id="sources"></ul>
+                <div class="side-note center" id="loaded-at"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Reflex AI: chat ============ -->
+      <section class="view view-ai" id="view-ai" data-view="ai" aria-label="Reflex AI chat" hidden>
+        <header class="main-head">
+          <div class="head-left">
+            <div class="head-title" id="chat-title">New analysis</div>
+            <span class="head-chip hide-sm" id="period-chip"><span data-icon="CalendarDays"></span><span>Loading…</span></span>
+          </div>
+          <div class="head-right">
+            <button class="head-chip clickable hide-sm" id="health-chip" hidden><span class="sev-dot"></span><span></span></button>
+            <button class="btn-secondary" id="newchat"><span data-icon="Plus"></span><span class="hide-sm">New chat</span></button>
+          </div>
+        </header>
+
+        <div class="thread" id="thread">
+          <div class="hero" id="hero">
+            <div class="hero-glow" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i></div>
+            <div class="hero-pill"><span data-icon="Sparkles"></span><span id="hero-pill-text">Reflex AI · grounded in your source files</span></div>
+            <h1 class="hero-title"><span id="greeting">Hello.</span><br><span class="hero-sub" id="hero-sub">What would you like to know about WACD’s finances?</span></h1>
+            <div class="prompts" id="prompts"></div>
+          </div>
+          <div class="messages" id="messages" aria-live="polite"></div>
+        </div>
+
+        <div class="composer-wrap">
+          <form class="composer" id="composer">
+            <textarea id="input" rows="1" placeholder="Ask about revenue, costs, budget, balance sheet…" aria-label="Your question"></textarea>
+            <div class="composer-bar">
+              <span class="composer-hint"><span data-icon="Sparkles"></span><span id="composer-model">Grounded in 4 source files</span></span>
+              <span class="kbd-hint hide-sm"><kbd>Enter</kbd> to send · <kbd>Shift</kbd>+<kbd>Enter</kbd> new line</span>
+              <button type="submit" class="send" id="send" aria-label="Send"><span data-icon="ArrowUp"></span></button>
+            </div>
+          </form>
+          <div class="disclaimer">AI-generated analysis. Figures are computed from the source files and verified in 3 layers; review before sharing externally.</div>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -171,6 +367,7 @@
   <script src="/vendor/icons.js"></script>
   <script src="/vendor/marked.js"></script>
   <script src="/vendor/purify.js"></script>
+  <script src="/charts.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

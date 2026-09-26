@@ -57,12 +57,18 @@ Conventions the app applies (and tells the model about):
 
 ```text
 public/                 Chat UI (vanilla JS, no build step): streaming answers with a live "show work" timeline,
-                        sidebar tabs (Overview KPIs + trend lines + revenue chart, Checks, Sources), light/dark/system
-                        theme, mobile drawer. Geist font and Lucide icons are served locally from node_modules.
+                        two views: Home (dashboard: KPIs, charts, data checks, sources, an Ask Reflex AI bar) and Reflex AI (the chat),
+                        switched by #/home and #/ai, light/dark/system
+                        theme, icon rail on tablets and a bottom tab bar on phones. Geist font and Lucide icons are served from public/fonts and public/vendor (npm run vendor).
                         Motion (count-ups, drawn trend lines, growing bars, streaming caret, theme reveal) lives in
                         the "Motion" section of styles.css; the animated panel background (aurora, cursor-lit dot
                         grid, flowing market-line canvas) in "Background effects" + app.js backgroundFx(). All of it
                         switches off under prefers-reduced-motion, and the canvas pauses when the tab is hidden.
+                        Dashboard charts (donuts, line graphs, diverging bars, columns, an invoice-size histogram,
+                        an EBIT budget-to-actual waterfall) are drawn by public/charts.js as plain SVG. Each has
+                        hover tooltips, arrow-key navigation, a Table view and a one-line takeaway computed from
+                        its own figures. Clicking a bar, slice or month (or a card's Ask button) opens Reflex AI
+                        with a question about it. Colours come from the --cat-* / --fav / --adv / --total tokens.
 src/server.js           Express: /api/chat (SSE stream), /api/overview, /api/issues, /api/reload
 src/state.js            Loads the Data folder once, reload on demand
 src/config.js           .env settings
@@ -76,7 +82,8 @@ src/analysis/           Deterministic engine:
   forecast.js             Invoicing forecast, recognition estimate, duplicate/overlap checks
   projection.js           Year-end projection (budget / run-rate / prior-year pattern)
   dataQuality.js          Cross-source reconciliation
-  overview.js             Sidebar KPIs
+  overview.js             Home KPIs
+  dashboard.js            Home chart data, EBIT bridge and budget progress (same engine as the AI tools)
 src/ai/
   rolePrompt.md           The analyst role prompt (edit freely)
   systemPrompt.js         Role prompt + generated data context (coverage, conventions, known issues)
